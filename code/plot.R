@@ -52,15 +52,15 @@ df_t <- df %>% pivot_longer(
 df_t$q17 <- as.numeric(df_t$q17)
 df_t <- df_t %>% mutate(
   q17_category = case_when(
-    q17 == 1 ~ "仕事",
-    q17 == 2 ~ "急な病気やケガによる通院",
-    q17 == 3 ~ "日常の通院",
-    q17 == 4 ~ "行事・イベント",
-    q17 == 5 ~ "飲酒",
-    q17 == 6 ~ "接待",
-    q17 == 7 ~ "時間短縮",
-    q17 == 8 ~ "知らない場所の移動",
-    q17 == 9 ~ "送迎",
+    q17 == 1 ~ "1.仕事",
+    q17 == 2 ~ "2.急な病気やケガによる通院",
+    q17 == 3 ~ "3.日常の通院",
+    q17 == 4 ~ "4.行事・イベント",
+    q17 == 5 ~ "5.飲酒",
+    q17 == 6 ~ "6.接待",
+    q17 == 7 ~ "7.時間短縮",
+    q17 == 8 ~ "8.知らない場所の移動",
+    q17 == 9 ~ "9.送迎",
     q17 == 10 ~ "上記以外の外出"
   )
 )
@@ -106,6 +106,7 @@ ggsave("plot/useCase.png", plot = g, width = 8, height = 6, dpi = 300)
 
 # そもそもこの人たちはタクシーをよく使わないんじゃない？あまり自分事として思っていない。
 # q11 : タクシーの利用頻度/月
+# q13 : (コロナ以降？)タクシーの利用が減った一番の理由はなんですか？
 # q14 : 交通手段において不便を感じた回数/月　（タクシーが15分以上来ないも含む）
 # q21 : タクシーに使う平均金額
 
@@ -117,6 +118,15 @@ df <- df %>% mutate(
     q11 == 4 ~ 3,
     q11 == 5 ~ 5,
     q11 == 6 ~ 7
+  ),
+  q13 = case_when(
+    q13 == 1 ~ "1.流しのタクシーがつかまらないから",
+    q13 == 2 ~ "2.呼んでも来るのが遅い・来ないから",
+    q13 == 3 ~ "3.価格が高いから",
+    q13 == 4 ~ "4.他の交通手段が増えたから",
+    q13 == 5 ~ "5.外出する頻度が減ったから",
+    q13 == 6 ~ "6.その他",
+    TRUE ~ "無回答"
   ),
   q14 = case_when(
     q14 == 1 ~ 0,
@@ -139,9 +149,40 @@ df <- df %>% mutate(
   )
 )
 
+g <- ggplot(df, aes(x = as.factor(q11),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "dodge")
+g <- g + scale_fill_npg()
+g <- g + labs(y = "人数",
+              fill = "ライドシェアへの立場",
+              x = "タクシーの利用回数"
+)
+plot(g)
+ggsave("plot/UseNum_ALL.png", plot = g, width = 8, height = 6, dpi = 300)
+
 dfTaxiUser <- df %>% filter(
   q11 > 0
 )
+
+g <- ggplot(data = dfTaxiUser, aes(x = 1, fill = as.factor(IsUphold))) +
+  geom_bar(stat = "count", color = "black") +
+  coord_polar(theta = "y")
+g <- g + labs(y = "人数",
+              fill = "ライドシェアへの立場",
+              title = "タクシーを平均月に一回以上利用するユーザーに限定した場合"
+              )
+plot(g)
+ggsave("plot/IssueRate_AU.png", plot = g, width = 8, height = 6, dpi = 300)
+
+g <- ggplot(dfTaxiUser, aes(x = as.factor(q11),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "dodge")
+g <- g + scale_fill_npg()
+g <- g + labs(y = "人数",
+              fill = "ライドシェアへの立場",
+              x = "タクシーの利用回数",
+              title = "タクシーを平均月に一回以上利用するユーザーに限定した場合"
+)
+plot(g)
+ggsave("plot/UseNum_AU.png", plot = g, width = 8, height = 6, dpi = 300)
 
 g <- ggplot(df, aes(x = as.factor(q14),fill = as.factor(IsUphold)))
 g <- g + geom_bar(position = "dodge")
@@ -206,6 +247,109 @@ g <- g + labs(x = "タクシー一回当たりにかける料金",
 )
 plot(g)
 
+df_reduce <- df %>% filter(
+  q13 != "無回答"
+)
+
+df_reduceAU <- dfTaxiUser %>% filter(
+  q13 != "無回答"
+)
+
+
+g <- ggplot(df_reduce, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "dodge")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "全人口を対象としたとき"
+)
+plot(g)
+ggsave("plot/whyReduce_ALL.png", plot = g, width = 8, height = 6, dpi = 300)
+
+g <- ggplot(df_reduce, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "fill")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "全人口を対象としたとき"
+)
+plot(g)
+
+g <- ggplot(df_reduceAU, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "dodge")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "AUを対象としたとき"
+)
+plot(g)
+ggsave("plot/whyReduce_AU.png", plot = g, width = 8, height = 6, dpi = 300)
+
+g <- ggplot(df_reduceAU, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "fill")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "AUを対象としたとき"
+)
+plot(g)
+
+
+# 不便を感じたことがある人に絞ったとき、価格を問題意識に持っている反対派が多いことに気づく
+# 意識が潜在化してしまっている。
+# 問題意識は持っているのに、ライドシェア反対。
+# 反対派はほかの代替手段に頼る傾向が比較的強い。（それで足りている？）
+# けど、絶対数としては（ライドシェアで改善できる）価格問題に対して、問題意識を持っている。
+# """もっとそういう点を訴えていけば、意識が顕在化するかも。"""
+# 安さ　＜　安全性　？
+df_reduceIsIncov <- df %>% filter(
+  q13 != "無回答",
+  q14 > 0
+)
+
+g <- ggplot(df_reduceIsIncov, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "dodge")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "全人口（不便を感じている）を対象としたとき"
+)
+plot(g)
+ggsave("plot/whyReduce_ALL_inconv.png", plot = g, width = 8, height = 6, dpi = 300)
+
+
+g <- ggplot(df_reduceIsIncov, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "fill")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "全人口（不便を感じている）を対象としたとき"
+)
+plot(g)
+
+df_reduceIsIncov_AU <- df %>% filter(
+  q13 != "無回答",
+  q14 > 0,
+  q11 > 0
+)
+
+g <- ggplot(df_reduceIsIncov_AU, aes(x = as.factor(q13),fill = as.factor(IsUphold)))
+g <- g + geom_bar(position = "dodge")
+g <- g + scale_fill_npg()
+g <- g + labs(x = "(コロナ以降？)タクシーの利用が減った一番の理由はなんですか？",
+              y = "人数",
+              fill = "ライドシェアへの立場",
+              title =  "AU（不便を感じている）を対象としたとき"
+)
+plot(g)
+ggsave("plot/whyReduce_AU_inconv.png", plot = g, width = 8, height = 6, dpi = 300)
+
 
 # どのくらい損失があるのかは試算したい。
 # 待ち時間×最低賃金（下限値）
@@ -217,11 +361,11 @@ plot(g)
 # （追加分析）料金×困った頻度 ----------------------------------------------------------
 
 
-df_temp1 <- df_temp %>% filter(
-  # q11 > 0,
-  q14 > 0
-)
-df_heatmap <- df_temp1 %>% group_by(
+# df_temp1 <- df_temp %>% filter(
+#   # q11 > 0,
+#   q14 > 0
+# )
+df_heatmap <- df_temp %>% group_by(
   q14,
   q21
 ) %>% mutate(
@@ -233,6 +377,7 @@ df_heatmap <- df_temp1 %>% group_by(
 )
 g <- ggplot(df_heatmap, aes(x = as.factor(q21), y = as.factor(q14), fill = Freq))
 g <- g + geom_tile()
+g <- g + scale_fill_gradient(low = "white", high = "red")
 g <- g + theme_bw()
 g <- g + labs(x = "タクシー一回当たりにかける料金",
               y = "交通手段において不便を感じた回数/月",
@@ -240,6 +385,80 @@ g <- g + labs(x = "タクシー一回当たりにかける料金",
 )
 plot(g)
 
+
+df_pivot <- df_heatmap %>%  arrange(
+  q21
+) %>% pivot_wider(names_from = q21, values_from = Freq, values_fill = 0) %>% arrange(
+  q14
+)
+ggsave("plot/heatMap_ALL.png", plot = g, width = 8, height = 6, dpi = 300)
+
+
+
+df_temp_up <- df_temp %>% filter(
+  IsUphold == "uphold"
+)
+df_heatmap_up <- df_temp_up %>% group_by(
+  q14,
+  q21
+) %>% mutate(
+  Freq = n()
+) %>% ungroup() %>% distinct(
+  q14,
+  q21,
+  Freq
+)
+g <- ggplot(df_heatmap_up, aes(x = as.factor(q21), y = as.factor(q14), fill = Freq))
+g <- g + geom_tile()
+g <- g + theme_bw()
+g <- g + scale_fill_gradient(low = "white", high = "red")
+g <- g + labs(x = "タクシー一回当たりにかける料金",
+              y = "交通手段において不便を感じた回数/月",
+              title =  "損失度ヒートマップ(uphold)"
+)
+plot(g)
+ggsave("plot/heatMap_Uphold.png", plot = g, width = 8, height = 6, dpi = 300)
+
+df_up_piv <- df_heatmap_up  %>%  arrange(
+  q21
+) %>% pivot_wider(names_from = q21, values_from = Freq, values_fill = 0) %>% arrange(
+  q14
+)
+
+
+
+
+
+df_temp_op <- df_temp %>% filter(
+  IsUphold == "opposit"
+)
+df_heatmap_op <- df_temp_op %>% group_by(
+  q14,
+  q21
+) %>% mutate(
+  Freq = n()
+) %>% ungroup() %>% distinct(
+  q14,
+  q21,
+  Freq
+)
+g <- ggplot(df_heatmap_op, aes(x = as.factor(q21), y = as.factor(q14), fill = Freq))
+g <- g + geom_tile()
+g <- g + scale_fill_gradient(low = "white", high = "red")
+g <- g + theme_bw()
+
+g <- g + labs(x = "タクシー一回当たりにかける料金",
+              y = "交通手段において不便を感じた回数/月",
+              title =  "損失度ヒートマップ(oppose)"
+)
+plot(g)
+ggsave("plot/heatMap_Opposit.png", plot = g, width = 8, height = 6, dpi = 300)
+
+df_op_piv <- df_heatmap_op %>%  arrange(
+  q21
+) %>% pivot_wider(names_from = q21, values_from = Freq, values_fill = 0) %>% arrange(
+  q14
+)
 
 # （追加分析）決定木で賛成派、反対派の特徴だしをする -----------------------------------------------
 
@@ -280,3 +499,17 @@ plot(g)
 #   method = 'class', # 分類問題
 #   control = rpart.control(minsplit = 10, cp = 0.001)  # 木の複雑度を制御
 # )
+
+
+
+data <- c(16,3,11,29,4,64)
+data
+m <- mean(data) 
+m
+v <- var(data)
+v
+s <- sd(data)
+s
+
+summary <- summary(data)
+summary
